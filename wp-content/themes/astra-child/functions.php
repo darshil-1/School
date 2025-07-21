@@ -86,31 +86,40 @@ function insert_data()
 	global $wpdb;
 
 	$firstname = sanitize_text_field($_POST['fname']);
-	$lastname = sanitize_text_field($_POST['lname']);
-	$gender = sanitize_text_field($_POST['gender']);
-	$email = sanitize_email($_POST['email']);
-	$school = sanitize_text_field($_POST['school']);
-	$hobbies = isset($_POST['hobbies']) ? array_map('sanitize_text_field', $_POST['hobbies']) : array();
+	$lastname  = sanitize_text_field($_POST['lname']);
+	$gender    = sanitize_text_field($_POST['gender']);
+	$email     = sanitize_email($_POST['email']);
+	$school    = sanitize_text_field($_POST['school']);
+	$hobbies   = isset($_POST['hobbies']) ? array_map('sanitize_text_field', $_POST['hobbies']) : [];
+
+	$table = 'student_tbl';
+	$existing_email = $wpdb->get_var($wpdb->prepare(
+		"SELECT email FROM $table WHERE email = %s",
+		$email
+	));
+
+	if ($existing_email) {
+		wp_send_json_error(array('message' => 'Email already exists.'));
+		wp_die();
+	}
 
 	$image_url = '';
 	if (isset($_FILES['img']) && !empty($_FILES['img']['name'])) {
-
 		require_once(ABSPATH . 'wp-admin/includes/file.php');
 		$uploaded_file = $_FILES['img'];
-
 		$upload_overrides = array('test_form' => false);
+
 		$movefile = wp_handle_upload($uploaded_file, $upload_overrides);
 
 		if ($movefile && !isset($movefile['error'])) {
 			$image_url = $movefile['url'];
 		} else {
 			wp_send_json_error(array('message' => 'File upload failed: ' . $movefile['error']));
+			wp_die();
 		}
 	}
 
-	$hobbies = !empty($hobbies) ? implode(', ', $hobbies) : '';
-
-	$table = 'student_tbl';
+	$hobbies_str = !empty($hobbies) ? implode(', ', $hobbies) : '';
 
 	$result = $wpdb->insert(
 		$table,
@@ -120,7 +129,7 @@ function insert_data()
 			'gender'    => $gender,
 			'email'     => $email,
 			'school'    => $school,
-			'hobbies'   => $hobbies,
+			'hobbies'   => $hobbies_str,
 			'image'     => $image_url,
 		),
 		array('%s', '%s', '%s', '%s', '%s', '%s', '%s')
@@ -134,7 +143,6 @@ function insert_data()
 
 	wp_die();
 }
-
 
 
 
@@ -301,17 +309,35 @@ function show_school()
 add_action('wp_ajax_show_my_school', 'show_school');
 
 
-function delete_school()
-{
-	global $wpdb;
-	$table = 'school_tbl';
-	$id = isset($_POST['id']) ? intval($_POST['id']) : 0;
-	$result = $wpdb->delete($table, array('schoolid' => $id));
-	wp_send_json_success($result);
+function delete_school() {
+    global $wpdb;
+
+    $schoolid = intval($_POST['id']);
+    $school = $wpdb->get_var($wpdb->prepare("SELECT school FROM school_tbl WHERE schoolid = %d", $schoolid));
+
+    if (!$schoolid || !$school) {
+        wp_send_json_error(['message' => 'Invalid school ID']);
+    }
+
+    $student_count = $wpdb->get_var($wpdb->prepare("SELECT COUNT(*) FROM student_tbl WHERE school = %s", $school));
+
+    if ($student_count > 0) {
+        wp_send_json_error([
+            'message' => "Cannot delete: $student_count student(s) are assigned to this school. Please remove them first."
+        ]);
+    }
+
+    $deleted = $wpdb->delete('school_tbl', ['schoolid' => $schoolid]);
+
+    if ($deleted) {
+        wp_send_json_success('School deleted successfully.');
+    } else {
+        wp_send_json_error(['message' => 'Failed to delete the school.']);
+    }
 }
 
-add_action('wp_ajax_delete_my_school', 'delete_school');
 
+add_action('wp_ajax_delete_my_school', 'delete_school');
 
 
 function get_school_data()
@@ -330,14 +356,14 @@ function get_school_data()
 }
 
 add_action('wp_ajax_get_school_data', 'get_school_data');
-
+add_action('wp_ajax_nopriv_get_school_data', 'get_school_data');
 
 function update_school_data()
 {
 	global $wpdb;
 	$table = 'school_tbl';
 
-	$id = isset($_POST['id']) ? intval($_POST['id']) : 0;
+	$schoolid = isset($_POST['schoolid']) ? intval($_POST['schoolid']) : 0;
 	if ($id === 0) {
 		wp_send_json_error('Invalid ID');
 	}
@@ -350,7 +376,7 @@ function update_school_data()
 			'school' => $sclname,
 			'address' => $scladdress,
 		),
-		array('schoolid' => $id),
+		array('schoolid' => $schoolid),
 		array('%s', '%s'),
 		array('%d')
 	);
@@ -360,6 +386,8 @@ function update_school_data()
 	} else {
 		wp_send_json_error('Failed to update');
 	}
+	  wp_die();
 }
 
 add_action('wp_ajax_update_my_school_data', 'update_school_data');
+// add_action('wp_ajax_nopriv_update_my_school_data', 'update_school_data');

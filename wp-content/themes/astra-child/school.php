@@ -24,6 +24,7 @@ get_header();
 </head>
 
 <body>
+  <div id="school-alert" class="alert d-none" role="alert"></div>
   <div class="heading mt-3">
     <h2>Student Details</h2>
     <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#exampleModal">Add Student</button>
@@ -197,6 +198,7 @@ get_header();
         </div>
         <div class="modal-body">
           <form method="post" id="schoolForm">
+
             <label for="school">School Name</label>
             <input type="text" id="school" name="school" placeholder="Enter your school name">
 
@@ -222,6 +224,8 @@ get_header();
         </div>
         <div class="modal-body">
           <form method="post" id="updateschoolForm">
+            <input type="hidden" name="schoolid" value="">
+
             <label for="school">School Name</label>
             <input type="text" id="school" name="school" placeholder="Enter your school name">
 
@@ -229,7 +233,7 @@ get_header();
             <textarea id="address" name="address" placeholder="Enter your school address"></textarea>
 
             <div class="modal-footer">
-              <button class="btn btn-primary">Update</button>
+              <button type="submit" class="btn btn-primary">Update</button>
               <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
             </div>
           </form>
