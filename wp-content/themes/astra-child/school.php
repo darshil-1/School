@@ -25,6 +25,7 @@ get_header();
 
 <body>
   <div id="school-alert" class="alert d-none" role="alert"></div>
+
   <div class="heading mt-3">
     <h2>Student Details</h2>
     <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#exampleModal">Add Student</button>
@@ -37,9 +38,9 @@ get_header();
         <th>Last Name</th>
         <th>Gender</th>
         <th>Email</th>
-        <th>School Name</th>
         <th>Hobbies</th>
         <th>Image</th>
+        <th>School Name</th>
         <th>Action</th>
       </thead>
       <tbody id="studentTableBody">
@@ -55,37 +56,42 @@ get_header();
         </div>
         <div class="modal-body">
           <div class="form">
+            <div id="req_alert" class="alert d-none" role="alert"></div>
             <form id="myForm" method="post">
               <label class="form-label" for="fname">Firstname</label>
               <input type="text" name="fname" id="fname" placeholder="Enter your firstname">
+              <span class="error" id="fnameErr"></span><br>
 
               <label class="form-label" for="lname">Lastname</label>
               <input type="text" name="lname" id="lname" placeholder="Enter your lastname">
+              <span class="error" id="lnameErr"></span><br>
 
               <label class="form-check-label" for="gender">Gender</label><br>
               <label class="form-check-label" for="male">Male</label>
               <input class="form-check-input" type="radio" value="male" name="gender" id="male">
               <label class="form-check-label" for="female">Female</label>
               <input class="form-check-input" type="radio" value="female" name="gender" id="female"><br>
+              <span class="error" id="genErr"></span><br>
 
               <label class="form-label" for="email">Email</label>
-              <input type="email" id="email" name="email" placeholder="Enter your email">
+              <input type="text" id="email" name="email" placeholder="Enter your email">
+              <span class="error" id="emailErr"></span><br>
 
               <label class="form-label" for="school">School Name</label>
-              <select name="school" id="">
+              <select name="school" id="school" class="form-select">
                 <option value="">Select School</option>
                 <?php
                 global $wpdb;
-                $table = 'school_tbl';
-                $schools = $wpdb->get_results("SELECT * FROM $table");
+                $schools = $wpdb->get_results("SELECT * FROM school_tbl");
 
                 if ($schools) {
                   foreach ($schools as $school) {
-                    echo '<option value="' . esc_attr($school->school) . '">' . esc_html($school->school) . '</option>';
+                    echo '<option value="' . esc_attr($school->schoolid) . '">' . esc_html($school->school) . '</option>';
                   }
                 }
                 ?>
               </select>
+              <span class="error" id="sclErr"></span><br>
 
 
               <label class="form-check-label" for="hobbies">Hobbies</label><br>
@@ -95,9 +101,11 @@ get_header();
               <input class="form-check-input" id="music" value="Music" type="checkbox" name="hobbies[]">
               <label class="form-check-label" for="reading">Reading</label>
               <input class="form-check-input" id="reading" value="Reading" type="checkbox" name="hobbies[]"><br>
+              <span class="error" id="hobErr"></span><br>  
 
               <label class="form-label" for="img">Image</label>
               <input class="form-control" type="file" name="img" id="img">
+              <span class="error" id="imgErr"></span><br>
 
               <div class="modal-footer">
                 <button name="add" class="btn btn-primary">Add</button>
@@ -144,11 +152,12 @@ get_header();
 
                 if ($schools) {
                   foreach ($schools as $school) {
-                    echo '<option value="' . esc_attr($school->school) . '">' . esc_html($school->school) . '</option>';
+                    echo '<option value="' . esc_attr($school->schoolid) . '">' . esc_html($school->school) . '</option>';
                   }
                 }
                 ?>
               </select>
+
               <label class="form-label">Hobbies</label><br>
               <label><input type="checkbox" name="hobbies[]" value="Sports"> Sports</label>
               <label><input type="checkbox" name="hobbies[]" value="Music"> Music</label>
@@ -169,6 +178,7 @@ get_header();
     </div>
   </div>
 
+  <div id="alert" class="alert d-none" role="alert"></div>
   <div class="heading mt-3">
     <h2>School Details</h2>
     <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#schoolModal">Add School</button>
@@ -215,7 +225,7 @@ get_header();
     </div>
   </div>
 
-    <div class="modal fade" id="updateschoolModal" tabindex="-1" aria-labelledby="exampleModalLabel" aria-hidden="true">
+  <div class="modal fade" id="updateschoolModal" tabindex="-1" aria-labelledby="exampleModalLabel" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered">
       <div class="modal-content">
         <div class="modal-header">
@@ -242,7 +252,7 @@ get_header();
     </div>
   </div>
 
-  
+
 
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.7/dist/js/bootstrap.bundle.min.js" integrity="sha384-ndDqU0Gzau9qJ1lfW4pNLlhNTkCfHzAVBReH9diLvGRem5+R9g2FzA8ZGN954O5Q" crossorigin="anonymous"></script>
 </body>

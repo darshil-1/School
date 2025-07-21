@@ -6,6 +6,75 @@ $(document).ready(function () {
 
   $("#myForm").on("submit", function (e) {
     e.preventDefault();
+
+    const fname = $("input[name='fname']").val().trim();
+    const lname = $("input[name='lname']").val().trim();
+    const email = $("input[name='email']").val().trim();
+    const gender = $("input[name='gender']:checked").val();
+    const school = $("#school").val();
+    const hobby = $("input[name='hobbies[]']").val().trim();
+    const img = $("input[name='img']").val();
+
+    if (!fname || !lname || !email || !gender || !school) {
+      showRequire("All Fields are required.", "warning");
+      return;
+    }
+
+    if (!fname) {
+      $("#fnameErr").html("Please Enter your firstname!");
+      return;
+    } else {
+      $("#fnameErr").html("");
+    }
+
+    if (!lname) {
+      $("#lnameErr").html("Please Enter your lastname!");
+      return;
+    } else {
+      $("#lnameErr").html("");
+    }
+
+    if (!gender) {
+      $("#genErr").html("Please select your gender!");
+      return;
+    } else {
+      $("#genErr").html("");
+    }
+
+    if (!email) {
+      $("#emailErr").html("Please Enter your email!");
+      return;
+    } else {
+      $("#emailErr").html("");
+    }
+
+    if (!school) {
+      $("#sclErr").html("Please select your school!");
+      return;
+    } else {
+      $("#sclErr").html("");
+    }
+
+    if (!hobby) {
+      $("#hobErr").html("Please select your hobbies!");
+      return;
+    } else {
+      $("#hobErr").html();
+    }
+
+    if (!img) {
+      $("#imgErr").html("Please Upload Image");
+      return;
+    } else {
+      $("imgErr").html("");
+    }
+
+    const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailPattern.test(email)) {
+      showRequire("Please enter a valid email address.", "warning");
+      return;
+    }
+
     var formData = new FormData(this);
     formData.append("action", "my_action");
 
@@ -16,13 +85,18 @@ $(document).ready(function () {
       contentType: false,
       processData: false,
       success: function (response) {
-        alert("Student added successfully!")
-        showData();
-        $("#myForm")[0].reset();
-        $("#exampleModal").modal("hide");
+        if (response.success) {
+          showData();
+          $("#myForm")[0].reset();
+          $("#exampleModal").modal("hide");
+          showBootstrapAlert(response.data.message, "success");
+        } else {
+          showRequire(response.data.message, "warning");
+        }
       },
       error: function (response) {
         console.error(response);
+        showBootstrapAlert(response.data.message, "danger");
       },
     });
   });
@@ -53,6 +127,7 @@ $(document).ready(function () {
         id: id,
       },
       function (response) {
+        showBootstrapAlert(response.data.message, "danger");
         showData();
       }
     );
@@ -75,7 +150,8 @@ $(document).ready(function () {
           $("#updateForm input[name='fname']").val(student.firstname);
           $("#updateForm input[name='lname']").val(student.lastname);
           $("#updateForm input[name='email']").val(student.email);
-          $("#updateSchoolSelect").val(student.school);
+          $("#updateSchoolSelect").val(student.schoolid);
+          // $('#updateSchoolSelect').val(data.schoolid);
           $(
             "#updateForm input[name='gender'][value='" + student.gender + "']"
           ).prop("checked", true);
@@ -91,6 +167,7 @@ $(document).ready(function () {
           }
 
           $("#updateForm input[name='id']").val(student.id);
+          refreshSchoolDropdown();
           $("#updateModal").modal("show");
         } else {
           alert("Failed to fetch student data.");
@@ -114,7 +191,7 @@ $(document).ready(function () {
       processData: false,
       success: function (response) {
         if (response.success) {
-          alert("Student updated successfully!");
+          showBootstrapAlert(response.data.message, "success");
           $("#updateModal").modal("hide");
 
           showData();
@@ -123,7 +200,7 @@ $(document).ready(function () {
         }
       },
       error: function () {
-        alert("An error occurred during update.");
+        showBootstrapAlert(response.data.message, "danger");
       },
     });
   });
@@ -141,13 +218,16 @@ $(document).ready(function () {
       contentType: false,
       processData: false,
       success: function (response) {
+        if (response.success) {
+          showAlert(response.data.message, "success");
+        }
         $("#schoolModal").modal("hide");
         showSchool();
         refreshSchoolDropdown();
-
       },
       error: function (response) {
         console.error(response);
+        showAlert(response.data.message, "danger");
       },
     });
   });
@@ -180,21 +260,21 @@ $(document).ready(function () {
       },
       function (response) {
         if (response.success) {
-          showBootstrapAlert("School deleted successfully.", "success");
+          showAlert(response.data.message, "success");
           showSchool();
           refreshSchoolDropdown();
         } else {
-          var errorMessage = response.data && response.data.message
-            ? response.data.message
-            : "An error occurred.";
-          showBootstrapAlert(errorMessage, "danger");
+          var errorMessage =
+            response.data && response.data.message
+              ? response.data.message
+              : "An error occurred.";
+          showAlert(errorMessage, "danger");
         }
       }
     ).fail(function () {
-      showBootstrapAlert("Request failed. Please try again.", "danger");
+      showAlert("Request failed. Please try again.", "danger");
     });
   });
-
 
   $(document).on("click", ".edit-school", function () {
     var id = $(this).data("id");
@@ -235,49 +315,75 @@ $(document).ready(function () {
       processData: false,
       success: function (response) {
         if (response.success) {
-          alert("School updated successfully!");
           $("#updateschoolModal").modal("hide");
+          showAlert(response.data.message, "success");
           showSchool();
           refreshSchoolDropdown();
         } else {
-          alert("Update failed.");
+          showAlert(response.data.message, "warning");
         }
       },
       error: function () {
-        alert("An error occurred during update.");
+        showAlert(response.data.message, "warning");
       },
     });
   });
 
   function refreshSchoolDropdown() {
-    $.post(MyAjax.ajaxurl,
-      { action: 'show_my_school' },
-      function (response) {
-        const temp = $('<div>').html(response);
-        let options = '<option value="">Select School</option>';
+    $.post(MyAjax.ajaxurl, { action: "show_my_school" }, function (response) {
+      const temp = $("<div>").html(response);
+      let options = '<option value="">Select School</option>';
 
-        temp.find('tr').each(function () {
-          const school = $(this).find('td:nth-child(2)').text();
-          options += `<option value="${school}">${school}</option>`;
-        });
+      temp.find("tr").each(function () {
+        const school = $(this).find("td:nth-child(2)").text();
+        options += `<option value="${school}">${school}</option>`;
+      });
 
-        $('#myForm select[name="school"], #updateSchoolSelect').html(options);
-      }
-    );
+      $('#myForm select[name="school"], #updateSchoolSelect').html(options);
+    });
   }
 
-  function showBootstrapAlert(message, type = 'danger') {
-
+  function showBootstrapAlert(message, type = "danger") {
     const $alert = $("#school-alert");
     $alert
-      .removeClass('d-none alert-success alert-danger alert-warning alert-info')
-      .addClass('alert-' + type)
+      .removeClass("d-none alert-success alert-danger alert-warning alert-info")
+      .addClass("alert-" + type)
       .text(message)
       .fadeIn();
 
     setTimeout(function () {
       $alert.fadeOut(function () {
-        $alert.addClass('d-none').removeClass('alert-' + type);
+        $alert.addClass("d-none").removeClass("alert-" + type);
+      });
+    }, 3000);
+  }
+
+  function showAlert(message, type = "danger") {
+    const $alert = $("#alert");
+    $alert
+      .removeClass("d-none alert-success alert-danger alert-warning alert-info")
+      .addClass("alert-" + type)
+      .text(message)
+      .fadeIn();
+
+    setTimeout(function () {
+      $alert.fadeOut(function () {
+        $alert.addClass("d-none").removeClass("alert-" + type);
+      });
+    }, 3000);
+  }
+
+  function showRequire(message, type = "danger") {
+    const $alert = $("#req_alert");
+    $alert
+      .removeClass("d-none alert-success alert-danger alert-warning alert-info")
+      .addClass("alert-" + type)
+      .text(message)
+      .fadeIn();
+
+    setTimeout(function () {
+      $alert.fadeOut(function () {
+        $alert.addClass("d-none").removeClass("alert-" + type);
       });
     }, 3000);
   }
