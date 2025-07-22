@@ -1,3 +1,11 @@
+// $(document).ajaxStart(function () {
+//   $("#loader").show();
+// });
+
+// $(document).ajaxStop(function () {
+//   $("#loader").hide();
+// });
+
 $(document).ready(function () {
   $("#myTable").DataTable();
   $("#mySchool").DataTable();
@@ -7,6 +15,8 @@ $(document).ready(function () {
   $("#myForm").on("submit", function (e) {
     e.preventDefault();
 
+    var isValid = false;
+
     const fname = $("input[name='fname']").val().trim();
     const lname = $("input[name='lname']").val().trim();
     const email = $("input[name='email']").val().trim();
@@ -15,63 +25,70 @@ $(document).ready(function () {
     const hobby = $("input[name='hobbies[]']").val().trim();
     const img = $("input[name='img']").val();
 
-    if (!fname || !lname || !email || !gender || !school) {
-      showRequire("All Fields are required.", "warning");
-      return;
-    }
+    // if (!fname || !lname || !email || !gender || !school) {
+    //   showRequire("All Fields are required.", "warning");
+    //   return;
+    // }
 
     if (!fname) {
       $("#fnameErr").html("Please Enter your firstname!");
-      return;
+      isValid = false;
     } else {
       $("#fnameErr").html("");
+      isValid = true;
     }
 
     if (!lname) {
       $("#lnameErr").html("Please Enter your lastname!");
-      return;
+      isValid = false;
     } else {
       $("#lnameErr").html("");
+      isValid = true;
     }
 
     if (!gender) {
       $("#genErr").html("Please select your gender!");
-      return;
+      isValid = false;
     } else {
       $("#genErr").html("");
+      isValid = true;
     }
 
+    const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!email) {
       $("#emailErr").html("Please Enter your email!");
-      return;
+      isValid = false;
+    } else if (!emailPattern.test(email)) {
+      $("#emailErr").html("Enter a Valid Email");
+      isValid = false;
     } else {
       $("#emailErr").html("");
+      isValid = true;
     }
 
     if (!school) {
       $("#sclErr").html("Please select your school!");
-      return;
+      isValid = false;
     } else {
       $("#sclErr").html("");
+      isValid = true;
     }
 
-    if (!hobby) {
-      $("#hobErr").html("Please select your hobbies!");
-      return;
-    } else {
-      $("#hobErr").html();
-    }
+    // if (!hobby) {
+    //   $("#hobErr").html("Please select your hobbies!");
+    //
+    // } else {
+    //   $("#hobErr").html();
+    // }
 
-    if (!img) {
-      $("#imgErr").html("Please Upload Image");
-      return;
-    } else {
-      $("imgErr").html("");
-    }
+    // if (!img) {
+    //   $("#imgErr").html("Please Upload Image");
+    //
+    // } else {
+    //   $("imgErr").html("");
+    // }
 
-    const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!emailPattern.test(email)) {
-      showRequire("Please enter a valid email address.", "warning");
+    if (!isValid) {
       return;
     }
 
@@ -84,19 +101,44 @@ $(document).ready(function () {
       data: formData,
       contentType: false,
       processData: false,
+      beforeSend: function () {
+        $("#loader").show();
+      },
+
       success: function (response) {
         if (response.success) {
           showData();
           $("#myForm")[0].reset();
+
           $("#exampleModal").modal("hide");
-          showBootstrapAlert(response.data.message, "success");
+          Swal.fire({
+            icon: "success",
+            title: "Success",
+            text: response.data.message,
+            timer: 3000,
+            showConfirmButton: false,
+          });
         } else {
-          showRequire(response.data.message, "warning");
+          Swal.fire({
+            icon: "error",
+            title: "Error",
+            text: response.data.message,
+          });
         }
       },
+
       error: function (response) {
-        console.error(response);
-        showBootstrapAlert(response.data.message, "danger");
+        Swal.fire({
+          icon: "error",
+          title: "Error",
+          text: response.data
+            ? response.data.message
+            : "An unexpected error occurred.",
+        });
+      },
+
+      complete: function () {
+        $("#loader").hide();
       },
     });
   });
@@ -116,21 +158,51 @@ $(document).ready(function () {
   }
 
   $(document).on("click", ".delete-link", function () {
-    if (!confirm("Are you sure you want to delete this student?")) return;
+    const id = $(this).data("id");
 
-    var id = $(this).data("id");
+    Swal.fire({
+      title: "Are you sure?",
+      text: "You won’t be able to revert this!",
+      icon: "warning",
+      showCancelButton: true,
+      confirmButtonText: "Yes, delete it!",
+      cancelButtonText: "Cancel",
+    }).then((result) => {
+      if (result.isConfirmed) {
+        $.ajax({
+          type: "POST",
+          url: MyAjax.ajaxurl,
+          data: {
+            action: "my_data_delete",
+            id: id,
+            beforeSend: function () {
+              $("#loader").show();
+            },
+          },
 
-    $.post(
-      MyAjax.ajaxurl,
-      {
-        action: "my_data_delete",
-        id: id,
-      },
-      function (response) {
-        showBootstrapAlert(response.data.message, "danger");
-        showData();
+          success: function (response) {
+            Swal.fire({
+              icon: "success",
+              title: "Deleted!",
+              text: response.data.message,
+              timer: 3000,
+              showConfirmButton: false,
+            });
+            showData();
+          },
+          error: function () {
+            Swal.fire({
+              icon: "error",
+              title: "Error!",
+              text: "Failed to delete student.",
+            });
+          },
+          complete: function () {
+            $("#loader").hide();
+          },
+        });
       }
-    );
+    });
   });
 
   $(document).on("click", ".edit-link", function () {
@@ -142,6 +214,9 @@ $(document).ready(function () {
       data: {
         action: "get_student_data",
         id: id,
+        beforeSend: function () {
+          $("#loader").show();
+        },
       },
       success: function (response) {
         if (response.success) {
@@ -151,7 +226,7 @@ $(document).ready(function () {
           $("#updateForm input[name='lname']").val(student.lastname);
           $("#updateForm input[name='email']").val(student.email);
           $("#updateSchoolSelect").val(student.schoolid);
-          // $('#updateSchoolSelect').val(data.schoolid);
+
           $(
             "#updateForm input[name='gender'][value='" + student.gender + "']"
           ).prop("checked", true);
@@ -167,7 +242,6 @@ $(document).ready(function () {
           }
 
           $("#updateForm input[name='id']").val(student.id);
-          refreshSchoolDropdown();
           $("#updateModal").modal("show");
         } else {
           alert("Failed to fetch student data.");
@@ -176,6 +250,9 @@ $(document).ready(function () {
       error: function () {
         alert("Error occurred.");
       },
+      complete: function () {
+        $("#loader").hide();
+      },
     });
   });
 
@@ -183,24 +260,54 @@ $(document).ready(function () {
     e.preventDefault();
     var formData = new FormData(this);
     formData.append("action", "update_student_data");
+
     $.ajax({
       type: "POST",
       url: MyAjax.ajaxurl,
       data: formData,
       contentType: false,
       processData: false,
+      beforeSend: function () {
+        $("#loader").show();
+      },
       success: function (response) {
         if (response.success) {
-          showBootstrapAlert(response.data.message, "success");
+          Swal.fire({
+            icon: "success",
+            title: "Success",
+            text: response.data.message,
+            timer: 3000,
+            showConfirmButton: false,
+          });
           $("#updateModal").modal("hide");
-
+          $("#updateForm")[0].reset();
+          showSchool();
           showData();
         } else {
-          alert("Update failed.");
+          Swal.fire({
+            icon: "error",
+            title: "Update Failed",
+            text: "Update failed.",
+          });
         }
       },
-      error: function () {
-        showBootstrapAlert(response.data.message, "danger");
+      error: function (xhr) {
+        let msg = "An error occurred.";
+        if (
+          xhr.responseJSON &&
+          xhr.responseJSON.data &&
+          xhr.responseJSON.data.message
+        ) {
+          msg = xhr.responseJSON.data.message;
+        }
+        Swal.fire({
+          icon: "error",
+          title: "Error",
+          text: msg,
+        });
+      },
+      complete: function () {
+        $("#loader").hide();
       },
     });
   });
@@ -208,7 +315,30 @@ $(document).ready(function () {
   showSchool();
   $("#schoolForm").submit(function (e) {
     e.preventDefault();
-    var formData = new FormData(this);
+
+    // $("#sclErr").html("");
+    // $("#addrErr").html("");
+
+    // const sclname = $("#school").val();
+    // const scladdress = $("input[name='address']").val();
+
+    // let isValid = false;
+
+    // if (!sclname) {
+    //   $("#sclErr").html("Please enter the school name.");
+    //   isValid = false;
+    // }
+
+    // if (!scladdress) {
+    //   $("#addrErr").html("Please enter the school address.");
+    //   isValid = false;
+    // }
+
+    // if (!isValid) {
+    //   return;
+    // }
+
+    const formData = new FormData(this);
     formData.append("action", "insert_my_school");
 
     $.ajax({
@@ -217,17 +347,41 @@ $(document).ready(function () {
       data: formData,
       contentType: false,
       processData: false,
+      beforeSend: function () {
+        $("#loader").show();
+      },
       success: function (response) {
         if (response.success) {
-          showAlert(response.data.message, "success");
+          Swal.fire({
+            icon: "success",
+            title: "Success",
+            text: response.data.message,
+            timer: 3000,
+            showConfirmButton: false,
+          });
+
+          $("#schoolModal").modal("hide");
+          $("#schoolForm")[0].reset();
+          showSchool();
+          showData();
+        } else {
+          Swal.fire({
+            icon: "error",
+            title: "Error",
+            text: response.data?.message || "Failed to insert school.",
+          });
         }
-        $("#schoolModal").modal("hide");
-        showSchool();
-        refreshSchoolDropdown();
       },
       error: function (response) {
         console.error(response);
-        showAlert(response.data.message, "danger");
+        Swal.fire({
+          icon: "error",
+          title: "Error",
+          text: response.responseJSON?.data?.message || "Something went wrong.",
+        });
+      },
+      complete: function () {
+        $("#loader").hide();
       },
     });
   });
@@ -248,31 +402,48 @@ $(document).ready(function () {
   }
 
   $(document).on("click", ".delete-school", function () {
-    if (!confirm("Are you sure you want to delete this school?")) return;
+    const id = $(this).data("id");
 
-    var id = $(this).data("id");
-
-    $.post(
-      MyAjax.ajaxurl,
-      {
-        action: "delete_my_school",
-        id: id,
-      },
-      function (response) {
-        if (response.success) {
-          showAlert(response.data.message, "success");
-          showSchool();
-          refreshSchoolDropdown();
-        } else {
-          var errorMessage =
-            response.data && response.data.message
-              ? response.data.message
-              : "An error occurred.";
-          showAlert(errorMessage, "danger");
-        }
+    Swal.fire({
+      title: "Are you sure?",
+      text: "You won’t be able to revert this!",
+      icon: "warning",
+      showCancelButton: true,
+      confirmButtonText: "Yes, delete it!",
+      cancelButtonText: "Cancel",
+    }).then((result) => {
+      if (result.isConfirmed) {
+        $.ajax({
+          type: "POST",
+          url: MyAjax.ajaxurl,
+          data: {
+            action: "delete_my_school",
+            id: id,
+            beforeSend: function () {
+              $("#loader").show();
+            },
+          },
+          success: function (response) {
+            if (response.success) {
+              Swal.fire("Deleted!", response.data.message, "success");
+              showSchool();
+              refreshSchoolDropdown();
+            } else {
+              Swal.fire(
+                "Error",
+                response.data?.message || "Failed to delete.",
+                "error"
+              );
+            }
+          },
+          error: function () {
+            Swal.fire("Error", "Something went wrong.", "error");
+          },
+          complete: function () {
+            $("#loader").hide();
+          },
+        });
       }
-    ).fail(function () {
-      showAlert("Request failed. Please try again.", "danger");
     });
   });
 
@@ -284,6 +455,9 @@ $(document).ready(function () {
       data: {
         action: "get_school_data",
         id: id,
+        beforeSend: function () {
+          $("#loader").show();
+        },
       },
       success: function (response) {
         if (response.success) {
@@ -294,11 +468,22 @@ $(document).ready(function () {
 
           $("#updateschoolModal").modal("show");
         } else {
-          alert("Failed to fetch school data.");
+          Swal.fire({
+            icon: "error",
+            title: "Error",
+            text: "Failed to fetch school data.",
+          });
         }
       },
       error: function () {
-        alert("Error occurred.");
+        Swal.fire({
+          icon: "error",
+          title: "Error",
+          text: "Error occurred while fetching data.",
+        });
+      },
+      complete: function () {
+        $("#loader").hide();
       },
     });
   });
@@ -313,33 +498,59 @@ $(document).ready(function () {
       data: formData,
       contentType: false,
       processData: false,
+      beforeSend: function () {
+        $("#loader").show();
+      },
       success: function (response) {
         if (response.success) {
           $("#updateschoolModal").modal("hide");
-          showAlert(response.data.message, "success");
+          Swal.fire({
+            icon: "success",
+            title: "Success",
+            text: response.data.message,
+            timer: 3000,
+            showConfirmButton: false,
+          });
+
           showSchool();
+          showData();
           refreshSchoolDropdown();
         } else {
-          showAlert(response.data.message, "warning");
+          Swal.fire({
+            icon: "warning",
+            title: "Warning",
+            text: response.data.message,
+          });
         }
       },
-      error: function () {
-        showAlert(response.data.message, "warning");
+      error: function (xhr) {
+        Swal.fire({
+          icon: "error",
+          title: "Error",
+          text: xhr.responseJSON?.data?.message || "An error occurred.",
+        });
+      },
+      complete: function () {
+        $("#loader").hide();
       },
     });
   });
 
   function refreshSchoolDropdown() {
     $.post(MyAjax.ajaxurl, { action: "show_my_school" }, function (response) {
-      const temp = $("<div>").html(response);
       let options = '<option value="">Select School</option>';
 
-      temp.find("tr").each(function () {
-        const school = $(this).find("td:nth-child(2)").text();
-        options += `<option value="${school}">${school}</option>`;
-      });
+      if (response.success) {
+        $.each(response.data, function (index, school) {
+          options += `<option value="${school.id}">${school.school_name}</option>`;
+        });
 
-      $('#myForm select[name="school"], #updateSchoolSelect').html(options);
+        $('#myForm select[name="school"], #updateSchoolSelect').html(options);
+      } else {
+        console.error("Failed to load schools");
+      }
+    }).fail(function () {
+      console.error("Error fetching school data");
     });
   }
 
@@ -387,4 +598,19 @@ $(document).ready(function () {
       });
     }, 3000);
   }
+
+  let confirmCallback = null;
+
+  function showConfirm(message, onConfirm) {
+    $("#confirmMessage").text(message);
+    confirmCallback = onConfirm;
+    $("#confirmModal").modal("show");
+  }
+
+  $("#confirmYes").click(function () {
+    if (typeof confirmCallback === "function") {
+      confirmCallback();
+      $("#confirmModal").modal("hide");
+    }
+  });
 });

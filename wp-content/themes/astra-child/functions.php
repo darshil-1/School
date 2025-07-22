@@ -71,12 +71,26 @@ function custom_post_type()
 add_action('init', 'custom_post_type', 0);
 
 
+
 function my_enqueue()
 {
 	wp_enqueue_script('my-ajax-script', get_stylesheet_directory_uri() . '/school.js', array('jquery'), null, true);
 	wp_localize_script('my-ajax-script', 'MyAjax', array('ajaxurl' => admin_url('admin-ajax.php')));
 }
+
 add_action('wp_enqueue_scripts', 'my_enqueue');
+
+
+
+function enqueue_datatables_assets()
+{
+
+	wp_enqueue_style('datatables-css', 'https://cdn.datatables.net/1.13.6/css/jquery.dataTables.min.css');
+
+
+	wp_enqueue_script('datatables-js', 'https://cdn.datatables.net/1.13.6/js/jquery.dataTables.min.js', array('jquery'), null, true);
+}
+add_action('wp_enqueue_scripts', 'enqueue_datatables_assets');
 
 
 add_action('wp_ajax_my_action', 'insert_data');
@@ -149,7 +163,6 @@ function insert_data()
 function my_data_show()
 {
 	global $wpdb;
-	// $results = $wpdb->get_results("SELECT * FROM student_tbl");
 
 	$results = $wpdb->get_results("
     SELECT 
@@ -204,7 +217,6 @@ function delete_data()
 
 
 add_action('wp_ajax_my_data_delete', 'delete_data');
-
 
 
 function get_student_data_callback()
@@ -353,7 +365,7 @@ function delete_school()
 
 	if ($student_count > 0) {
 		wp_send_json_error([
-			'message' => "Cannot delete: $student_count student(s) are assigned to this school. Please remove or reassign them first."
+			'message' => "Cannot delete: $student_count students are assigned to this school. Please remove them first."
 		]);
 	}
 

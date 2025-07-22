@@ -15,16 +15,16 @@ get_header();
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.7.1/jquery.min.js"></script>
-  <script src="https://cdn.datatables.net/2.3.2/js/dataTables.js"></script>
-  <link rel="stylesheet" href="https://cdn.datatables.net/2.3.2/css/dataTables.dataTables.css" />
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.7/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-LN+7fdVzj6u52u30Kp6M/trliBMCMKTyK833zpbD+pXdCLuTusPj697FH4R/5mcr" crossorigin="anonymous">
   <link rel="stylesheet" href="<?php echo get_stylesheet_directory_uri() . '/school.css' ?>">
   <title>School</title>
 </head>
 
 <body>
-  <div id="school-alert" class="alert d-none" role="alert"></div>
+
+  <div id="loader" class="loader-overlay" style="display: none;">
+    <div class="spinner"></div>
+  </div>
 
   <div class="heading mt-3">
     <h2>Student Details</h2>
@@ -57,6 +57,7 @@ get_header();
         <div class="modal-body">
           <div class="form">
             <div id="req_alert" class="alert d-none" role="alert"></div>
+
             <form id="myForm" method="post">
               <label class="form-label" for="fname">Firstname</label>
               <input type="text" name="fname" id="fname" placeholder="Enter your firstname">
@@ -101,7 +102,7 @@ get_header();
               <input class="form-check-input" id="music" value="Music" type="checkbox" name="hobbies[]">
               <label class="form-check-label" for="reading">Reading</label>
               <input class="form-check-input" id="reading" value="Reading" type="checkbox" name="hobbies[]"><br>
-              <span class="error" id="hobErr"></span><br>  
+              <span class="error" id="hobErr"></span><br>
 
               <label class="form-label" for="img">Image</label>
               <input class="form-control" type="file" name="img" id="img">
@@ -211,12 +212,14 @@ get_header();
 
             <label for="school">School Name</label>
             <input type="text" id="school" name="school" placeholder="Enter your school name">
+            <span class="error" id="sclErr"></span><br>
 
             <label for="address">School Address</label>
             <textarea type="text" id="address" name="address" placeholder="Enter your school address"></textarea>
+            <span class="error" id="sclAddErr"></span><br>
 
             <div class="modal-footer">
-              <button class="btn btn-primary">Add School</button>
+              <button type="submit" class="btn btn-primary">Add School</button>
               <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
             </div>
           </form>
@@ -252,9 +255,10 @@ get_header();
     </div>
   </div>
 
-
-
+  <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.7.1/jquery.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.7/dist/js/bootstrap.bundle.min.js" integrity="sha384-ndDqU0Gzau9qJ1lfW4pNLlhNTkCfHzAVBReH9diLvGRem5+R9g2FzA8ZGN954O5Q" crossorigin="anonymous"></script>
+  <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+
 </body>
 
 </html>

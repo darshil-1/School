@@ -405,3 +405,170 @@ function delete_data() {
 
 <!-- school -->
  $student_count = $wpdb->get_var($wpdb->prepare("SELECT COUNT(*) FROM {$wpdb->prefix}student_tbl WHERE schoolid = %d", $schoolid));
+
+
+
+
+
+
+
+$("#schoolForm").submit(function (e) {
+  e.preventDefault();
+  var formData = new FormData(this);
+  formData.append("action", "insert_my_school");
+
+  $.ajax({
+    type: "POST",
+    url: MyAjax.ajaxurl,
+    data: formData,
+    contentType: false,
+    processData: false,
+    success: function (response) {
+      if (response.success) {
+        Swal.fire({
+          icon: "success",
+          title: "Success",
+          text: response.data.message,
+          timer: 2000,
+          showConfirmButton: false,
+        });
+      } else {
+        Swal.fire({
+          icon: "error",
+          title: "Error",
+          text: response.data?.message || "Failed to insert school.",
+        });
+      }
+      $("#schoolModal").modal("hide");
+      showSchool();
+      showData();
+    },
+    error: function (response) {
+      console.error(response);
+      Swal.fire({
+        icon: "error",
+        title: "Error",
+        text: response.responseJSON?.data?.message || "Something went wrong.",
+      });
+    },
+  });
+});
+
+$(document).on("click", ".delete-school", function () {
+  const id = $(this).data("id");
+
+  Swal.fire({
+    title: "Are you sure?",
+    text: "You won’t be able to revert this!",
+    icon: "warning",
+    showCancelButton: true,
+    confirmButtonText: "Yes, delete it!",
+    cancelButtonText: "Cancel",
+  }).then((result) => {
+    if (result.isConfirmed) {
+      $.ajax({
+        type: "POST",
+        url: MyAjax.ajaxurl,
+        data: {
+          action: "delete_my_school",
+          id: id,
+        },
+        success: function (response) {
+          if (response.success) {
+            Swal.fire("Deleted!", response.data.message, "success");
+            showSchool();
+            refreshSchoolDropdown();
+          } else {
+            Swal.fire(
+              "Error",
+              response.data?.message || "Failed to delete.",
+              "error"
+            );
+          }
+        },
+        error: function () {
+          Swal.fire("Error", "Something went wrong.", "error");
+        },
+      });
+    }
+  });
+});
+
+$(document).on("click", ".edit-school", function () {
+  var id = $(this).data("id");
+  $.ajax({
+    type: "POST",
+    url: MyAjax.ajaxurl,
+    data: {
+      action: "get_school_data",
+      id: id,
+    },
+    success: function (response) {
+      if (response.success) {
+        var schools = response.data;
+        $("#updateschoolForm input[name='schoolid']").val(schools.schoolid);
+        $("#updateschoolForm input[name='school']").val(schools.school);
+        $("#updateschoolForm textarea[name='address']").val(schools.address);
+
+        $("#updateschoolModal").modal("show");
+      } else {
+        Swal.fire({
+          icon: "error",
+          title: "Error",
+          text: "Failed to fetch school data.",
+        });
+      }
+    },
+    error: function () {
+      Swal.fire({
+        icon: "error",
+        title: "Error",
+        text: "Error occurred while fetching data.",
+      });
+    },
+  });
+});
+
+$("#updateschoolForm").on("submit", function (e) {
+  e.preventDefault();
+  let formData = new FormData(this);
+  formData.append("action", "update_my_school_data");
+  $.ajax({
+    type: "POST",
+    url: MyAjax.ajaxurl,
+    data: formData,
+    contentType: false,
+    processData: false,
+    success: function (response) {
+      if (response.success) {
+        $("#updateschoolModal").modal("hide");
+        Swal.fire({
+          icon: "success",
+          title: "Success",
+          text: response.data.message,
+          timer: 2000,
+          showConfirmButton: false,
+        });
+
+        showSchool();
+        refreshSchoolDropdown();
+        showData();
+      } else {
+        Swal.fire({
+          icon: "warning",
+          title: "Warning",
+          text: response.data.message,
+        });
+      }
+    },
+    error: function (xhr) {
+      Swal.fire({
+        icon: "error",
+        title: "Error",
+        text: xhr.responseJSON?.data?.message || "An error occurred.",
+      });
+    },
+  });
+});
+
+  
